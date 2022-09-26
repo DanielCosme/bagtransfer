@@ -7,7 +7,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func CheckFixityWorkflow(ctx workflow.Context, data Data) error {
+func CheckFixityWorkflow(ctx workflow.Context, data Data) (*Data, error) {
 	// Activity Options
 	options := workflow.ActivityOptions{
 		// Timeout options specify when to automatically timeout Activity functions.
@@ -16,17 +16,11 @@ func CheckFixityWorkflow(ctx workflow.Context, data Data) error {
 	}
 	ctx = workflow.WithActivityOptions(ctx, options)
 
-	// Workflow steps??
-	// For now just say hello world.
-	if err := workflow.ExecuteActivity(ctx, GreetActivity, data).Get(ctx, nil); err != nil {
-		return err
+	// Package data
+	if err := workflow.ExecuteActivity(ctx, BagItActivity, data).Get(ctx, nil); err != nil {
+		return nil, err
 	}
-
-	if err := workflow.ExecuteActivity(ctx, GreetActivity2, data).Get(ctx, nil); err != nil {
-		return err
-	}
-
-	return nil
+	return &data, nil
 }
 
 func defaultRetryPolicy() *temporal.RetryPolicy {

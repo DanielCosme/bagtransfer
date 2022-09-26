@@ -18,8 +18,7 @@ func main() {
 
 	w := worker.New(c, app.CheckFixityTaskQueue, worker.Options{})
 	w.RegisterWorkflow(app.CheckFixityWorkflow)
-	w.RegisterActivity(app.GreetActivity)
-	w.RegisterActivity(app.GreetActivity2)
+	w.RegisterActivity(app.BagItActivity)
 	// start listening on the Task Queue
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		log.Fatalln("unable to run worker", err)

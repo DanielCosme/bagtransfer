@@ -5,6 +5,7 @@ go 1.19
 require go.temporal.io/sdk v1.17.0
 
 require (
+	github.com/APTrust/bagins v0.0.0-20161121172035-5bc945341498 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
