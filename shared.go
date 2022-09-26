@@ -2,8 +2,19 @@ package app
 
 const CheckFixityTaskQueue = "check_fixity_task_queue"
 
-type Data struct {
-	Result string
-	Path   string
-	Error  string
+type FixityInput struct {
+	Packages []string
+}
+
+type Result struct {
+	TranfersChecked int
+	Data            []*FixityResult
+}
+
+type FixityResult struct {
+	Outcome      string
+	EventDetail  string
+	PackageName  string
+	Errors       []string
+	PackageFiles []string
 }

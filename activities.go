@@ -2,92 +2,60 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
 	"github.com/APTrust/bagins"
 )
 
-func GreetActivity(ctx context.Context, data Data) (string, error) {
-	var res string
-	switch data.Result {
-	case "err":
-		return "", errors.New("unidentified error")
-	default:
-		res = fmt.Sprintf("Hello, %s", data.Result)
-		fmt.Println(res)
-	}
-	return res, nil
-}
-
-func GreetActivity2(ctx context.Context, data Data) (string, error) {
-	var res string
-	switch data.Result {
-	case "err":
-		return "", errors.New("unidentified error")
-	default:
-		res = fmt.Sprintf("Aloha, %s", data.Result)
-		fmt.Println(res)
-	}
-	return res, nil
-}
-
-type Transfer struct {
-	EncryptionType    string
-	File              os.File
-	Checksum          string
-	GeneratedChecksum string
-}
-
-func BagItActivity(ctx context.Context, d Data) error {
-	var err error
-	// What are te steps?
-	//  - I have 2 dirs
-	//		- Read bagit dir
-	//		- Read the second package
-	// Get into the struct all files for the current dir
-
+func Fixitycheck(ctx context.Context, packageName string) (*FixityResult, error) {
 	rootPath, err := os.Getwd()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	packages := []string{
-		"fixity_pass",
-		"fails_checksum",
-		"missing_checksum",
-	}
-	for _, p := range packages {
-		print(p, "Daniel")
-		path := fmt.Sprintf("%s/package/%s", rootPath, p)
 
-		b, err := bagins.ReadBag(path, []string{"bagit.txt", "bag-info.txt"})
-		if err != nil {
-			if err.Error() == "Unable to parse a manifest" {
-				print("Manifest missing or invalid")
-				continue
-			} else {
-				return err
-			}
+	res := &FixityResult{PackageName: packageName}
+	path := fmt.Sprintf("%s/package/%s", rootPath, packageName)
+	// Parse bagit package
+	b, err := bagins.ReadBag(path, []string{"bagit.txt", "bag-info.txt"})
+	if err != nil {
+		if err.Error() == "Unable to parse a manifest" {
+			res.Outcome = "Failed"
+			res.EventDetail = "Missing Input"
+			res.Errors = append(res.Errors, err.Error())
+		} else {
+			res.Outcome = err.Error()
+			res.Errors = append(res.Errors, err.Error())
 		}
-		ms := b.Manifests
-		for _, m := range ms {
-			print(m.Name())
-			errors := m.RunChecksums()
-			if len(errors) > 0 {
-				for _, e := range errors {
-					print("Error: " + e.Error())
-				}
-			} else {
-				print("Checksums are valid")
-			}
-		}
-		print("")
+		return res, nil
 	}
 
-	return err
-}
+	// Check files in package
+	files, err := b.ListFiles()
+	if err != nil {
+		res.Outcome = "There is something wrong with the files"
+		res.Errors = append(res.Errors, err.Error())
+	}
+	for _, f := range files {
+		res.PackageFiles = append(res.PackageFiles, f)
+	}
 
-func print(a ...any) {
-	fmt.Println(a...)
+	// Checksum validation
+	ms := b.Manifests
+	for _, m := range ms {
+		errs := m.RunChecksums()
+		if len(errs) > 0 {
+			res.Outcome = "Failed"
+			res.EventDetail = "CHECKSUM MISMATCH"
+			for _, e := range errs {
+				res.Errors = append(res.Errors, e.Error())
+			}
+			// return nil, errors.New(strings.Join(res.Errors, " - "))
+		} else {
+			res.Outcome = "Success"
+			res.EventDetail = "Checksums match"
+		}
+	}
+
+	return res, nil
 }

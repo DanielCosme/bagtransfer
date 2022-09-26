@@ -1,13 +1,14 @@
 package app
 
 import (
+	"fmt"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
-func CheckFixityWorkflow(ctx workflow.Context, data Data) (*Data, error) {
+func CheckFixityWorkflow(ctx workflow.Context, data FixityInput) (*Result, error) {
 	// Activity Options
 	options := workflow.ActivityOptions{
 		// Timeout options specify when to automatically timeout Activity functions.
@@ -16,11 +17,18 @@ func CheckFixityWorkflow(ctx workflow.Context, data Data) (*Data, error) {
 	}
 	ctx = workflow.WithActivityOptions(ctx, options)
 
-	// Package data
-	if err := workflow.ExecuteActivity(ctx, BagItActivity, data).Get(ctx, nil); err != nil {
-		return nil, err
+	results := &Result{}
+	for _, p := range data.Packages {
+		res := &FixityResult{}
+		if err := workflow.ExecuteActivity(ctx, Fixitycheck, p).Get(ctx, res); err != nil {
+			fmt.Println(err.Error())
+			// return err
+		}
+		results.Data = append(results.Data, res)
 	}
-	return &data, nil
+	results.TranfersChecked = len(results.Data)
+	// return results, errors.New("Handmade error")
+	return results, nil
 }
 
 func defaultRetryPolicy() *temporal.RetryPolicy {

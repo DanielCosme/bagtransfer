@@ -19,7 +19,18 @@ func main() {
 		TaskQueue: app.CheckFixityTaskQueue,
 	}
 
-	_, err = c.ExecuteWorkflow(context.Background(), opts, app.CheckFixityWorkflow, app.Data{Result: "Daniel"})
+	input := app.FixityInput{
+		Packages: []string{
+			"fixity_pass",
+			"fails_checksum",
+			"missing_checksum",
+		},
+	}
+	_, err = c.ExecuteWorkflow(
+		context.Background(),
+		opts, app.CheckFixityWorkflow,
+		input,
+	)
 	if err != nil {
 		log.Fatalln("error checking fixity", err)
 	}
